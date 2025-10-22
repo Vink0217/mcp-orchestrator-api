@@ -1,5 +1,4 @@
 fastapi
 uvicorn
 httpx
-vercel-ai
 google-generativeai
