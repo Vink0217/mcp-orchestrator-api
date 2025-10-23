@@ -1,13 +1,22 @@
 [project]
 name = "vercel-chatbot-brain"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Vercel-hosted chatbot brain that orchestrates an MCP server."
 readme = "README.md"
-requires-python = ">=3.13"
+# Use the Python version compatible with Vercel and dependencies
+requires-python = ">=3.10, <3.11"
 dependencies = [
-    "fastapi=0.109.2",
-    "google-generativeai>=0.3.1",
-    "httpx=0.25.2",
-    "uvicorn>=0.25.0",
-    "pydantic>=2.0.0"
+    # Pin versions exactly as in the working requirements.txt
+    "fastapi==0.109.2",
+    "google-generativeai==0.3.1",
+    "httpx==0.25.2",
+    "uvicorn==0.25.0",
+    "pydantic==2.5.3",
+    "pydantic-core==2.14.6",
+    "typing-extensions>=4.5.0", # Keep this as it was needed
 ]
+
+# Optional: Add build system info if using specific tools like Poetry or Hatch
+# [build-system]
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
