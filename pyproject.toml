@@ -9,5 +9,4 @@ dependencies = [
     "google-generativeai>=0.8.5",
     "httpx>=0.28.1",
     "uvicorn>=0.38.0",
-    "vercel-ai>=0.1.0",
 ]
