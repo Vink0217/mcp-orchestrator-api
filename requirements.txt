@@ -2,13 +2,6 @@ fastapi==0.109.2
 httpx==0.25.2
 google-generativeai==0.3.1
 uvicorn==0.25.0
-# Add/Pin Pydantic and its core
 pydantic==2.5.3
 pydantic-core==2.14.6
-# Keep other dependencies
 typing-extensions>=4.5.0
-sniffio>=1.1
-anyio>=3.4.0
-starlette==0.32.0
-h11>=0.13
-httpcore==1.0.2
