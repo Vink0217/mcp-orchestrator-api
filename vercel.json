@@ -1,15 +1,16 @@
-{
-  "builds": [
-    {
-      "src": "/api/index.py",
-      "use": "@vercel/python",
-      "config": { "runtime": "python3.10" } 
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.py"
-    }
-  ]
+"builds": [
+  {
+    "src": "/api/index.py",
+    "use": "@vercel/python",
+    "config": { "runtime": "python3.10", "maxLambdaSize": "50mb" }
+  }
+],
+"routes": [
+  {
+    "src": "/(.*)",
+    "dest": "/api/index.py"
+  }
+],
+"hooks": {
+  "build": "pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt"
 }
