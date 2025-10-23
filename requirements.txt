@@ -1,4 +1,12 @@
 fastapi==0.109.2
-uvicorn
-httpx
-google-generativeai
+httpx==0.25.2  # Pinned version
+google-generativeai==0.3.1 # Pinned version
+uvicorn==0.25.0 # Pinned version
+# Add necessary dependencies explicitly
+typing-extensions>=4.5.0 # Often needed by fastapi/pydantic
+pydantic>=1.10,<3 # Dependency for fastapi
+sniffio>=1.1 # Dependency for httpx
+anyio>=3.4.0 # Dependency for fastapi/starlette
+starlette==0.32.0 # Core of fastapi
+h11>=0.13 # Dependency for uvicorn/httpcore
+httpcore==1.0.2 # Dependency for httpx
