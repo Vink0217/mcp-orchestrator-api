@@ -4,8 +4,8 @@ import json
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 import google.generativeai as genai
-# Import the necessary types for tool definition
-from google.generativeai.types import FunctionDeclaration, Tool
+# Corrected import for older library version
+from google.ai import generativelanguage as glm
 import httpx
 
 # --- Configuration ---
@@ -22,40 +22,40 @@ except KeyError:
 # Create the FastAPI app
 app = FastAPI()
 
-# --- Tool Definition (Correct Gemini Format using FunctionDeclaration) ---
-gemini_tools = Tool(
+# --- Tool Definition (Correct Gemini Format using glm) ---
+gemini_tools = glm.Tool( # Use glm.Tool
     function_declarations=[
-        FunctionDeclaration(
+        glm.FunctionDeclaration( # Use glm.FunctionDeclaration
             name="FS_list_files",
             description="List all files in a given directory inside the sandbox.",
             parameters={
-                "type": "object",
+                "type_": glm.Type.OBJECT, # Use glm.Type.OBJECT
                 "properties": {
-                    "path": {"type": "string", "description": "The directory path to list, e.g., '.'"}
+                    "path": {"type_": glm.Type.STRING, "description": "The directory path to list, e.g., '.'"} # Use glm.Type.STRING
                 },
                 "required": ["path"]
             }
         ),
-        FunctionDeclaration(
+        glm.FunctionDeclaration( # Use glm.FunctionDeclaration
             name="FS_read_file",
             description="Read the full content of a text file inside the sandbox.",
             parameters={
-                "type": "object",
+                "type_": glm.Type.OBJECT, # Use glm.Type.OBJECT
                 "properties": {
-                    "path": {"type": "string", "description": "The file path to read, e.g., 'main.py'"}
+                    "path": {"type_": glm.Type.STRING, "description": "The file path to read, e.g., 'main.py'"} # Use glm.Type.STRING
                 },
                 "required": ["path"]
             }
         ),
-        FunctionDeclaration(
+        glm.FunctionDeclaration( # Use glm.FunctionDeclaration
             name="FS_write_file",
             description="Write text content to a file. Use overwrite=True to replace.",
             parameters={
-                "type": "object",
+                "type_": glm.Type.OBJECT, # Use glm.Type.OBJECT
                 "properties": {
-                    "path": {"type": "string", "description": "The file path to write to."},
-                    "content": {"type": "string", "description": "The text content to write."},
-                    "overwrite": {"type": "boolean", "default": False}
+                    "path": {"type_": glm.Type.STRING, "description": "The file path to write to."}, # Use glm.Type.STRING
+                    "content": {"type_": glm.Type.STRING, "description": "The text content to write."}, # Use glm.Type.STRING
+                    "overwrite": {"type_": glm.Type.BOOLEAN, "description": "Default is False"} # Use glm.Type.BOOLEAN
                 },
                 "required": ["path", "content"]
             }
@@ -76,7 +76,7 @@ def convert_messages_to_gemini(messages):
         role = msg.get("role", "user")
         if role == "assistant":
             role = "model"
-        
+
         content = msg.get("content", "")
 
         # Handle different content structures (simple string vs. list of parts)
@@ -101,13 +101,16 @@ def convert_messages_to_gemini(messages):
                         except TypeError:
                             content_str = str(content_str) # Fallback
 
+                    # In older versions, the 'name' for function_response should match the called function's name
+                    tool_name_used = item.get("tool_use_id", item.get("name", "")) # Try to get the original name
+
                     parts.append({
                         "function_response": {
-                            "name": item.get("tool_use_id", ""), # Gemini needs the original tool call id/name
+                            "name": tool_name_used,
                             "response": {"content": content_str}
                         }
                     })
-                    role = "function" # Gemini's role for tool results
+                    role = "user" # Use 'user' role for function responses in this older version format
                 else: # Assume text
                     parts.append({"text": str(item.get("text", str(item)))}) # Extract text or stringify
             gemini_messages.append({"role": role, "parts": parts})
@@ -128,11 +131,12 @@ async def chat(body: dict):
     """
     messages = body.get('messages', [])
     if not messages:
-        return StreamingResponse(iter(["No messages provided."]), media_type="text/plain", status_code=400)
+        async def empty_stream(): yield "No messages provided."
+        return StreamingResponse(empty_stream(), media_type="text/plain", status_code=400)
 
     try:
         # Initialize the model WITHOUT tools in constructor
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash') # Or 'gemini-pro' if flash isn't available
         gemini_messages = convert_messages_to_gemini(messages)
 
         # Call Gemini (non-streaming) to check for tool calls, passing tools list
@@ -147,8 +151,8 @@ async def chat(body: dict):
 
         first_part = response.candidates[0].content.parts[0]
 
-        # Check if Gemini wants to use a tool
-        if hasattr(first_part, 'function_call') and first_part.function_call:
+        # Check if Gemini wants to use a tool (using older attribute check)
+        if hasattr(first_part, 'function_call') and first_part.function_call and first_part.function_call.name:
             # --- Tool Call Path ---
             print("Gemini requested tool call.") # Debug
 
@@ -187,7 +191,7 @@ async def chat(body: dict):
             # Add the AI's tool call and our tool result to the history
             gemini_messages.append({"role": "model", "parts": [first_part]}) # Append AI's request
             gemini_messages.append({                             # Append our result
-                "role": "function",
+                "role": "user", # Use 'user' role for function response in older format
                 "parts": [{"function_response": {"name": tool_name, "response": {"content": tool_result_content_str}}}]
             })
 
@@ -203,12 +207,15 @@ async def chat(body: dict):
                 print("Streaming final response...") # Debug
                 try:
                     async for chunk in final_response_stream:
+                        # Check for text parts within the chunk
                         if chunk.parts:
-                            yield chunk.parts[0].text
+                           for part in chunk.parts:
+                               if hasattr(part, 'text') and part.text:
+                                    yield part.text
                         # Handle potential safety blocks during streaming
-                        if hasattr(chunk, 'prompt_feedback') and chunk.prompt_feedback.block_reason:
+                        if hasattr(chunk, 'prompt_feedback') and hasattr(chunk.prompt_feedback, 'block_reason') and chunk.prompt_feedback.block_reason:
                              print(f"Stream blocked: {chunk.prompt_feedback.block_reason}") # Debug
-                             yield f"\n[Error: Response blocked due to {chunk.prompt_feedback.block_reason}]"
+                             yield f"\n[Error: Response blocked due to {chunk.prompt_feedback.block_reason_message or chunk.prompt_feedback.block_reason}]"
                              break
                 except Exception as stream_error:
                     print(f"Error during final response streaming: {stream_error}") # Debug
@@ -230,12 +237,15 @@ async def chat(body: dict):
                 print("Streaming simple text response...") # Debug
                 try:
                     async for chunk in text_response_stream:
+                         # Check for text parts within the chunk
                         if chunk.parts:
-                            yield chunk.parts[0].text
+                           for part in chunk.parts:
+                               if hasattr(part, 'text') and part.text:
+                                    yield part.text
                         # Handle potential safety blocks during streaming
-                        if hasattr(chunk, 'prompt_feedback') and chunk.prompt_feedback.block_reason:
+                        if hasattr(chunk, 'prompt_feedback') and hasattr(chunk.prompt_feedback, 'block_reason') and chunk.prompt_feedback.block_reason:
                              print(f"Stream blocked: {chunk.prompt_feedback.block_reason}") # Debug
-                             yield f"\n[Error: Response blocked due to {chunk.prompt_feedback.block_reason}]"
+                             yield f"\n[Error: Response blocked due to {chunk.prompt_feedback.block_reason_message or chunk.prompt_feedback.block_reason}]"
                              break
                 except Exception as stream_error:
                     print(f"Error during simple text streaming: {stream_error}") # Debug
