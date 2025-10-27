@@ -10,7 +10,7 @@ import httpx
 
 # --- Configuration ---
 # Read the Workshop URL from environment variables, with a fallback
-WORKSHOP_URL = os.environ.get("WORKSHOP_URL", "https://vinayak-mcp-workshop.up.railway.app") # Read from env
+WORKSHOP_URL = os.environ.get("WORKSHOP_URL", "mcp-suite-production.up.railway.app") # Read from env
 
 # Set up the Google Gemini client
 try:
