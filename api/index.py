@@ -135,8 +135,8 @@ async def chat(body: dict):
         return StreamingResponse(empty_stream(), media_type="text/plain", status_code=400)
 
     try:
-        # Initialize the model WITHOUT tools in constructor
-        model = genai.GenerativeModel('gemini-1.5-flash') # Or 'gemini-pro' if flash isn't available
+        # Initialize the model WITHOUT tools in constructor - FIXED: Added models/ prefix
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         gemini_messages = convert_messages_to_gemini(messages)
 
         # Call Gemini (non-streaming) to check for tool calls, passing tools list
