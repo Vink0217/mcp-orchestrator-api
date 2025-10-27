@@ -206,7 +206,7 @@ async def chat(body: dict):
             async def stream_generator():
                 print("Streaming final response...") # Debug
                 try:
-                    async for chunk in final_response_stream:
+                    for chunk in final_response_stream:  # Changed from 'async for' to 'for'
                         # Check for text parts within the chunk
                         if chunk.parts:
                            for part in chunk.parts:
@@ -236,7 +236,7 @@ async def chat(body: dict):
             async def text_stream_generator():
                 print("Streaming simple text response...") # Debug
                 try:
-                    async for chunk in text_response_stream:
+                    for chunk in text_response_stream:  # Changed from 'async for' to 'for'
                          # Check for text parts within the chunk
                         if chunk.parts:
                            for part in chunk.parts:
